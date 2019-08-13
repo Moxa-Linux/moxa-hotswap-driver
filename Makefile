@@ -1,4 +1,5 @@
-KDIR=/lib/modules/`uname -r`/build
+KVER	:= $(shell uname -r)
+KDIR	:= /lib/modules/$(KVER)/build
 
 TARGET_MODULE=moxa_hotswap
 obj-m += $(TARGET_MODULE).o
@@ -14,4 +15,3 @@ $(TARGET_MODULE).ko:  main.c $(TARGET_MODULE).h mxhtsp_ioctl.h
 
 clean:
 	$(MAKE) -C $(KDIR) M=`pwd` clean
-
