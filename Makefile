@@ -1,17 +1,21 @@
-KVER	:= $(shell uname -r)
-KDIR	:= /lib/modules/$(KVER)/build
+TARGET := moxa_hotswap
+KRELEASE ?= $(shell uname -r)
+KBUILD ?= /lib/modules/$(KRELEASE)/build
 
-TARGET_MODULE=moxa_hotswap
-obj-m += $(TARGET_MODULE).o
+obj-m += $(TARGET).o
 
 #Use multiple files
-$(TARGET_MODULE)-objs := main.o 
+$(TARGET)-objs := main.o
 
-modules: $(TARGET_MODULE).ko 
+modules: $(TARGET).ko
 
-$(TARGET_MODULE).ko:  main.c $(TARGET_MODULE).h mxhtsp_ioctl.h
+$(TARGET).ko:  main.c $(TARGET).h mxhtsp_ioctl.h
 	@echo "Making modules..."
-	$(MAKE) -C $(KDIR) M=`pwd` modules
+	$(MAKE) -C $(KBUILD) M=$(PWD) modules
+
+install: modules
+	/usr/bin/install -m 644 -D $(TARGET).ko /lib/modules/$(KRELEASE)/kernel/drivers/misc/$(TARGET).ko
+	/usr/bin/install -m 644 -D $(TARGET).conf /usr/lib/modules-load.d/$(TARGET).conf
 
 clean:
-	$(MAKE) -C $(KDIR) M=`pwd` clean
+	$(MAKE) -C $(KBUILD) M=$(PWD) clean
