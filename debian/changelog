@@ -1,3 +1,9 @@
+moxa-hotswap-driver (1.0.1) stretch; urgency=low
+
+  * fix: rename install and postinst with '-amd64'
+
+ -- Elvis Yao (姚家瑋) <ElvisCW.Yao@moxa.com>  Mon, 25 Nov 2019 13:51:28 +0800
+
 moxa-hotswap-driver (1.0.0) stretch; urgency=low
 
   * Initial release
