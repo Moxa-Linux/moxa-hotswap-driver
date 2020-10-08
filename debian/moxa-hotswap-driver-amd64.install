@@ -1,2 +1,2 @@
-moxa_hotswap.ko /lib/modules/4.9.0-12-amd64/kernel/drivers/misc/
+moxa_hotswap.ko /lib/modules/4.9.0-13-amd64/kernel/drivers/misc/
 moxa_hotswap.conf /usr/lib/modules-load.d
