@@ -14,10 +14,14 @@
 /*
  * Hardware specific part
  */
-/* SATA controller: Intel Corporation Sunrise Point-LP SATA Controller */
-#define	MY_DEVICE_ID1	0x9d03
+/* SATA controller: Intel 300 Corporation Sunrise Point-LP SATA Controller */
+/* https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/300-series-chipset-on-package-pch-datasheet-vol-1.pdf  */
+/* on Whiskey Lake platform */
+#define	MY_DEVICE_ID1	0x9dd3
 
-/* Ref Intel 100 Series Chipset Family Platform Controller Hub */
+/* Ref Intel 300 Series Chipset Family Platform Controller Hub */
+/* https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/serial-ata-ahci-spec-rev1_3.pdf */
+/* Offset 28h: PxSSTS – Port x Serial ATA Status */
 #define SATA_P1SSTS	0x1A8	/* Port 1 Serial ATA Status */
 #define SATA_P2SSTS	0x228	/* Port 2 Serial ATA Status */
 
