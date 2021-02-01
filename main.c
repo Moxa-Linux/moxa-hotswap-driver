@@ -4,6 +4,7 @@
  * 03-01-2011	Wade Liang	Creat it
  * 10-03-2013	Jared Wu	Porting to V2616A
  * 12-11-2018	Elvis Yao	Porting to V2406C
+ * 01-29-2021	Elvis Yao	Porting to kernel version > 4.15
  */
 #include <linux/delay.h>
 #include <linux/module.h>
@@ -22,9 +23,14 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <linux/spinlock.h>
+#include <linux/version.h>
 #include "mxhtsp_ioctl.h"
 #include "moxa_hotswap.h"
 #include "moxa_superio.h"
+
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4, 15, 0))
+#include <linux/uaccess.h>
+#endif
 
 MODULE_AUTHOR("ElvisCW.Yao@moxa.com");
 MODULE_LICENSE("GPL");
@@ -193,7 +199,11 @@ static struct miscdevice hotswap_dev = {
 	.fops = &hotswap_fops,
 };
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
 static void hotswap_check_disk(unsigned long arg)
+#else
+static void hotswap_check_disk(struct timer_list *t)
+#endif
 {
 	unsigned long now;
 
@@ -225,7 +235,7 @@ static void hotswap_check_disk(unsigned long arg)
 		ioread32(vaddr+0x128), ioread32(vaddr+0x1A8), ioread32(vaddr+0x228), ioread32(vaddr+0x2A8));
 }
 
-static int __init hotswap_init_module (void)
+static int __init hotswap_init_module(void)
 {
 	struct pci_dev *dev;
 
@@ -267,9 +277,13 @@ static int __init hotswap_init_module (void)
 	hotswap_led_control(1, 0);
 	hotswap_led_control(2, 0);
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
 	init_timer(&timer);
 	timer.data = 0;
 	timer.function = hotswap_check_disk;
+#else
+	timer_setup(&timer, hotswap_check_disk, 0);
+#endif
 	timer.expires = jiffies + 100*HZ/1000;
 	add_timer(&timer);
 
@@ -279,7 +293,7 @@ static int __init hotswap_init_module (void)
 /*
  * close and cleanup module
  */
-static void __exit hotswap_cleanup_module (void)
+static void __exit hotswap_cleanup_module(void)
 {
 	p("\n");
 	misc_deregister(&hotswap_dev);
