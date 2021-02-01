@@ -6,6 +6,7 @@
  * 12-11-2018	Elvis Yao	Porting to V2406C
  * 01-29-2021	Elvis Yao	Porting to kernel version > 4.15
  */
+
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -84,6 +85,7 @@ static long hotswap_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	void __user *addr = (void __user *)arg;
 	int err = 0;
 	mxhtsp_param p;
+
 	if (_IOC_TYPE(cmd) != IOCTL_MAGIC)
 		return -ENOTTY;
 	if (_IOC_NR(cmd) > IOCTL_MAXNR)
@@ -94,6 +96,7 @@ static long hotswap_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 	}
+
 	if (err)
 		return -EFAULT;
 
@@ -244,7 +247,7 @@ static int __init hotswap_init_module(void)
 	/* get base address for ACHI controller */
 	dev = pci_get_device(PCI_VENDOR_ID_INTEL, MY_DEVICE_ID1, NULL);
 	if (!dev) {
-		mprintk("can't find pci_device  \n");
+		mprintk("can't find pci_device\n");
 		return -1;
 	}
 	paddr = pci_resource_start(dev, 5);
@@ -265,7 +268,7 @@ static int __init hotswap_init_module(void)
 	vaddr = ioremap(paddr, 1024);
 
 	if (misc_register(&hotswap_dev)) {
-		mprintk("register misc fail !\n");
+		mprintk("register hotswap driver fail!\n");
 		return -1;
 	}
 
