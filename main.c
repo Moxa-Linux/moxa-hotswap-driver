@@ -25,6 +25,7 @@
 #include <asm/io.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
+#include <linux/dmi.h>
 #include "mxhtsp_ioctl.h"
 #include "moxa_hotswap.h"
 #include "moxa_superio.h"
@@ -41,6 +42,57 @@ static unsigned long paddr; /* physical memory address */
 static void *vaddr; /* virtual memory address */
 static struct timer_list timer;
 static disk_info d1, d2;
+struct dmi_read_state {
+	char *buf;
+	loff_t pos;
+	size_t count;
+	int entry_length;
+};
+
+static size_t dmi_entry_length(const struct dmi_header *dh)
+{
+	const char *p = (const char *)dh;
+	p += dh->length;
+	while (p[0] || p[1])
+		p++;
+	return 2 + p - (const char *)dh;
+}
+
+static void get_dmi_sysconf(const struct dmi_header *dh, void *private)
+{
+	struct dmi_read_state *state = (struct dmi_read_state*)private;
+	if (dh->type == DMI_ENTRY_SYSCONF) {
+		size_t entry_length = dmi_entry_length(dh);
+		memory_read_from_buffer(state->buf, state->count, &state->pos, dh, entry_length);
+		state->entry_length = entry_length;
+	}
+}
+
+const char *get_dmi_sysconf_name(void)
+{
+	char buf[BUFF_SZ];
+	static char m_name_buf[NAME_LEN];
+	int i = 0, j = 0;
+	struct dmi_read_state state = {
+		.buf = buf,
+		.pos = 0,
+		.count = BUFF_SZ,
+		0,
+	};
+
+	memset(&buf, 0, BUFF_SZ);
+	memset(&m_name_buf, 0, NAME_LEN);
+
+	dmi_walk(get_dmi_sysconf, (void*)&state);
+	for (i = NAME_START; i < NAME_END; i++) {
+		if (buf[i] != ' ') {
+			m_name_buf[j] = buf[i];
+			j++;
+		}
+	}
+
+	return m_name_buf;
+}
 
 static int hotswap_led_control(int led_num, int on)
 {
@@ -241,11 +293,22 @@ static void hotswap_check_disk(struct timer_list *t)
 static int __init hotswap_init_module(void)
 {
 	struct pci_dev *dev;
+	unsigned int device_id = KBL_DEVICE_ID;
+	const char *cpu_model;
 
 	printk("Initializing MOXA hotswap module\n");
 
-	/* get base address for ACHI controller */
-	dev = pci_get_device(PCI_VENDOR_ID_INTEL, MY_DEVICE_ID1, NULL);
+	/* get base address for ACHI controller according to CPU model */
+	/* to get CPU model name from DMI type 12 option 1 */
+	cpu_model = get_dmi_sysconf_name();
+
+	if (!strcmp(cpu_model, WHL_CPU_NAME)) {
+		device_id = WHL_DEVICE_ID;
+	}
+
+	printk("use CPU model %s device id %x\n", cpu_model, device_id);
+
+	dev = pci_get_device(PCI_VENDOR_ID_INTEL, device_id, NULL);
 	if (!dev) {
 		mprintk("can't find pci_device\n");
 		return -1;
