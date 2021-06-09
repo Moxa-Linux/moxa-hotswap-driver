@@ -19,7 +19,12 @@
 #include <linux/pci.h>
 #include <linux/workqueue.h>
 #include <linux/timer.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 #include <asm/uaccess.h>
+#else
+#include <linux/uaccess.h>
+#endif
 #include <asm/io.h>
 #include <linux/spinlock.h>
 #include "mxhtsp_ioctl.h"
@@ -193,7 +198,11 @@ static struct miscdevice hotswap_dev = {
 	.fops = &hotswap_fops,
 };
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static void hotswap_check_disk(unsigned long arg)
+#else
+static void hotswap_check_disk(struct timer_list *t)
+#endif
 {
 	unsigned long now;
 
@@ -267,11 +276,16 @@ static int __init hotswap_init_module (void)
 	hotswap_led_control(1, 0);
 	hotswap_led_control(2, 0);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	init_timer(&timer);
 	timer.data = 0;
 	timer.function = hotswap_check_disk;
 	timer.expires = jiffies + 100*HZ/1000;
 	add_timer(&timer);
+#else
+    timer_setup(&timer, hotswap_check_disk, 0);
+    mod_timer(&timer, jiffies + 100*HZ/1000);
+#endif
 
 	return 0;
 }
