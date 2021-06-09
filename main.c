@@ -26,6 +26,7 @@
 #include <linux/spinlock.h>
 #include <linux/version.h>
 #include <linux/dmi.h>
+#include <linux/printk.h>
 #include "mxhtsp_ioctl.h"
 #include "moxa_hotswap.h"
 #include "moxa_superio.h"
@@ -122,13 +123,13 @@ static int hotswap_led_control(int led_num, int on)
 
 static int hotswap_open(struct inode *inode, struct file *file)
 {
-	p("\n");
+	pr_debug("\n");
 	return 0;
 }
 
 static int hotswap_release(struct inode *inode, struct file *file)
 {
-	p("\n");
+	pr_debug("\n");
 	return 0;
 }
 
@@ -207,13 +208,13 @@ static long hotswap_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 			break;
 
 		default:
-			mprintk("ioctl error\n");
+			pr_err("ioctl error\n");
 			return -EINVAL;
 	}
 	return 0;
 
 err:
-	mprintk("copy data error\n");
+	pr_err("copy data error\n");
 	return -1;
 }
 
@@ -230,7 +231,7 @@ ssize_t hotswap_write(struct file *file, const char __user *buf, size_t count,
 	if (copy_from_user(param, buf, count))
 		return -1;
 
-	p("count=%d param[3]=%x\n", count, param[3]);
+	pr_debug("count=%zu, param[3]=%x\n", count, param[3]);
 	param[3] = '\0'; /* change \n to \0 */
 	sscanf(param, "%d %d", &led_num, &on);
 
@@ -286,7 +287,7 @@ static void hotswap_check_disk(struct timer_list *t)
 
 	mod_timer(&timer, jiffies+100*HZ/1000);
 
-	p("disk 0x128=%x, 0x1A8=%x, 0x228=%x, 0x2A8=%x\n",
+	pr_debug("disk 0x128=%x, 0x1A8=%x, 0x228=%x, 0x2A8=%x\n",
 		ioread32(vaddr+0x128), ioread32(vaddr+0x1A8), ioread32(vaddr+0x228), ioread32(vaddr+0x2A8));
 }
 
@@ -296,7 +297,7 @@ static int __init hotswap_init_module(void)
 	unsigned int device_id = KBL_DEVICE_ID;
 	const char *cpu_model;
 
-	printk("Initializing MOXA hotswap module\n");
+	pr_info("moxa_hotswap: initializing MOXA hotswap module\n");
 
 	/* get base address for ACHI controller according to CPU model */
 	/* to get CPU model name from DMI type 12 option 1 */
@@ -306,32 +307,32 @@ static int __init hotswap_init_module(void)
 		device_id = WHL_DEVICE_ID;
 	}
 
-	printk("use CPU model %s device id %x\n", cpu_model, device_id);
+	pr_info("moxa_hotswap: use device id 0x%x for CPU model %s\n", device_id, cpu_model);
 
 	dev = pci_get_device(PCI_VENDOR_ID_INTEL, device_id, NULL);
 	if (!dev) {
-		mprintk("can't find pci_device\n");
+		pr_err("can't find pci device id 0x%x\n", device_id);
 		return -1;
 	}
 	paddr = pci_resource_start(dev, 5);
-	p("paddr=%x\n", paddr);
+	pr_debug("paddr=%lu\n", paddr);
 
 #ifdef DEBUG
 	unsigned long flag = pci_resource_flags(dev, 5);
 	if (flag & IORESOURCE_IO)
-		printk("ioresource io\n");
+		pr_debug("ioresource io\n");
 	else if (flag & IORESOURCE_MEM)
-		printk("ioresource mem\n");
+		pr_debug("ioresource mem\n");
 #endif
 	/* register in /proc/iomem, 1024 can count in the same file
 	if (!request_mem_region(paddr, 1024, "hotswap")) {
-		mprintk("can't reguest mem region");
+		pr_err("can't reguest mem region");
 	}
 	*/
 	vaddr = ioremap(paddr, 1024);
 
 	if (misc_register(&hotswap_dev)) {
-		mprintk("register hotswap driver fail!\n");
+		pr_err("register hotswap driver fail!\n");
 		return -1;
 	}
 
@@ -361,7 +362,7 @@ static int __init hotswap_init_module(void)
  */
 static void __exit hotswap_cleanup_module(void)
 {
-	p("\n");
+	pr_debug("\n");
 	misc_deregister(&hotswap_dev);
 	iounmap(vaddr);
 	/* release_mem_region(paddr, 1024); */

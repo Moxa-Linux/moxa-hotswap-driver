@@ -1,6 +1,5 @@
 #define MOXA_HOTSWAP_MINOR 115
 #define DEVICE_NAME "hotswap"
-#define mprintk(fmt, args...) printk(KERN_ERR "moxa_hotswap:"fmt,  ##args)
 
 /*
  * Supersit bits
@@ -45,15 +44,3 @@ typedef struct _disk_info {
 	int busy;
 	int idle_cnt;
 } disk_info;
-
-/*
- * Debug
- */
-#ifdef DEBUG
-/* use ## to remove comma, for not args condition */
-#define p(fmt, args...) printk("%s: "fmt, __FUNCTION__, ##args)
-#define pp(fmt, args...)  /* pp: not print debug message */
-#else
-#define p(fmt, args...)
-#define pp(fmt, args...)
-#endif
