@@ -1,6 +1,7 @@
 TARGET := moxa_hotswap
 KRELEASE ?= $(shell uname -r)
 KBUILD ?= /lib/modules/$(KRELEASE)/build
+PWD ?= $(shell pwd)
 
 obj-m += $(TARGET).o
 
