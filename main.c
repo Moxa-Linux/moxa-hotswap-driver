@@ -144,11 +144,23 @@ static long hotswap_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	if (_IOC_NR(cmd) > IOCTL_MAXNR)
 		return -ENOTTY;
 
+
+/* The 5.0 kernel dropped the type argument to access_ok() */
+/* [PATCH] Remove 'type' argument from access_ok() function */
+/* https://lkml.org/lkml/2019/1/4/418 */
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 0, 0))
+	if (_IOC_DIR(cmd) & _IOC_READ) {
+		err = !access_ok((void __user *)arg, _IOC_SIZE(cmd));
+	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
+		err = !access_ok((void __user *)arg, _IOC_SIZE(cmd));
+	}
+#else
 	if (_IOC_DIR(cmd) & _IOC_READ) {
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
 	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 	}
+#endif
 
 	if (err)
 		return -EFAULT;
